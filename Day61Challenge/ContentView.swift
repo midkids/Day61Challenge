@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 // Here we will be sending and receiving data
 // from the Internet
@@ -19,10 +20,12 @@ import SwiftUI
 //    inteface immediately
 
 struct ContentView: View {
-    @State private var users = [User]()
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \User.name) private var users: [User]
+
     var body: some View {
         NavigationStack {
-            List(users, id: \.id) { user in
+            List(users) { user in
                 NavigationLink(value: user) {
                     HStack {
                         Text(user.name)
@@ -39,7 +42,7 @@ struct ContentView: View {
             // functions
             // await tells SwiftUI a sleep MIGHT happen here
             .task {
-                await loadData()
+                await loadDataIfNeeded()
             }
         }
     }
@@ -64,7 +67,15 @@ struct ContentView: View {
     // 2. We want to fetch the data from that
     //    URL using Swift
     // 3. Decode that result into an array of User values
-    func loadData() async {
+    func loadDataIfNeeded() async {
+        do {
+            let userCount = try modelContext.fetchCount(FetchDescriptor<User>())
+            guard userCount == 0 else { return }
+        } catch {
+            print("Unable to check for saved users: \(error)")
+            return
+        }
+
         // Get some JSON data Paul created
         guard let url = URL(string: "https://www.hackingwithswift.com/samples/friendface.json") else {
             print("Invalid URL")
@@ -93,7 +104,13 @@ struct ContentView: View {
             // there’s a built-in dateDecodingStrategy called
             // .iso8601 that decodes it automatically
             decoder.dateDecodingStrategy = .iso8601
-            users = try decoder.decode([User].self, from: data)
+            let downloadedUsers = try decoder.decode([User].self, from: data)
+
+            for user in downloadedUsers {
+                modelContext.insert(user)
+            }
+
+            try modelContext.save()
         } catch {
             // If our data retrieval above fails for any
             // reason, we simply print an error message
@@ -106,4 +123,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .modelContainer(for: User.self, inMemory: true)
 }
