@@ -18,25 +18,6 @@ import SwiftUI
 //    causing them to update the user
 //    inteface immediately
 
-struct User: Codable, Hashable {
-    var id: UUID
-        var isActive: Bool
-        var name: String
-        var age: Int
-        var company: String
-        var email: String
-        var about: String
-        var registered: Date
-        var tags: [String]
-    var friends: [Friend]
-}
-
-struct Friend: Codable, Hashable {
-    var id: UUID
-    var name: String
-}
-
-
 struct ContentView: View {
     @State private var users = [User]()
     var body: some View {
