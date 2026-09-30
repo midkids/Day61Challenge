@@ -21,6 +21,7 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    // Replaced the view’s @State array with a sorted @Query.
     @Query(sort: \User.name) private var users: [User]
 
     var body: some View {
@@ -67,6 +68,9 @@ struct ContentView: View {
     // 2. We want to fetch the data from that
     //    URL using Swift
     // 3. Decode that result into an array of User values
+    
+    // Added loadDataIfNeeded(), which downloads and
+    // saves users only when the database is empty.
     func loadDataIfNeeded() async {
         do {
             let userCount = try modelContext.fetchCount(FetchDescriptor<User>())
@@ -75,7 +79,7 @@ struct ContentView: View {
             print("Unable to check for saved users: \(error)")
             return
         }
-
+        print("Users database was empty")
         // Get some JSON data Paul created
         guard let url = URL(string: "https://www.hackingwithswift.com/samples/friendface.json") else {
             print("Invalid URL")
@@ -105,11 +109,13 @@ struct ContentView: View {
             // .iso8601 that decodes it automatically
             decoder.dateDecodingStrategy = .iso8601
             let downloadedUsers = try decoder.decode([User].self, from: data)
-
+            // Add the downloaded and decoded Users into
+            // SwiftData
             for user in downloadedUsers {
                 modelContext.insert(user)
             }
-
+            
+            // Save the SwiftData
             try modelContext.save()
         } catch {
             // If our data retrieval above fails for any
@@ -122,6 +128,7 @@ struct ContentView: View {
 }
 
 #Preview {
+    // Updated the preview with an in-memory model container.
     ContentView()
         .modelContainer(for: User.self, inMemory: true)
 }

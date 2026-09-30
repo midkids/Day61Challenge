@@ -14,6 +14,7 @@ struct Day61ChallengeApp: App {
         WindowGroup {
             ContentView()
         }
+        // Added the SwiftData model container to the app.
         .modelContainer(for: User.self)
     }
 }
